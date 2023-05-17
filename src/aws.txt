@@ -1,0 +1,55 @@
+//aws
+const AWS = require('aws-sdk');
+require('dotenv').config();
+
+AWS.config.update({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    region: process.env.AWS_DEFAULT_REGION,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+});
+
+
+const dynamoClient = new AWS.DynamoDB.DocumentClient();
+const TABLE_NAME = "package";
+
+
+//Create 
+const addPackage = async (package) => {
+    const params = {
+        TableName: TABLE_NAME,
+        Item: package
+    }
+    await dynamoClient.put(params).promise();
+}
+//Read
+const getPackageByID = async (id) => {
+    const params = {
+        TableName: TABLE_NAME,
+        Key: {
+            "packageID": id,
+            "packageName": "Mũ len"
+        }
+    }
+    const p = await dynamoClient.get(params).promise();
+    console.log(p)
+    return p;
+}
+const getPackage = async (package) => {
+    const params = {
+        TableName: TABLE_NAME
+    }
+    const packages = await dynamoClient.scan(params).promise();
+    console.log(packages)
+    return packages;
+}
+//Update
+//Delete
+// getPackage();
+getPackageByID("0")
+// addPackage({
+//     packageID: "0",
+//     packageName: 'Mũ len',
+//     quantity: "12",
+//     description: "Mũ len thời trang nam!",
+//     price: "120000"
+// })
