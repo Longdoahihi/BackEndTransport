@@ -3,19 +3,29 @@ const { v4: uuidv4 } = require('uuid');
 class BillOfLadingsController {
     getBillOfLadings(req, res) {
         // Lấy các tham số truy vấn từ URL
-        const { billOfLadingStatus } = req.query;
+        let { billOfLadingStatus } = req.query;
+        billOfLadingStatus = JSON.parse(billOfLadingStatus);
+        if (!Array.isArray(billOfLadingStatus)) {
+            res.send({
+                code: 400,
+                message: "billOfLadingStatus phải là 1 mảng",
+                billOfLadingStatus: JSON.parse(billOfLadingStatus)
+            })
+            return;
+        }
 
-
-        // Tạo DynamoDB scan params object với biểu thức filter và attribute names/values đã tạo
+        const filterExpresstion = billOfLadingStatus.map(item => `:val${item}`);
+        let expressValue = {};
+        billOfLadingStatus.map(item => {
+            expressValue[`:val${item}`] = item
+        })
         const params = {
             TableName: 'BillOfLading',
-            FilterExpression: "#blStatus = :val",
+            FilterExpression: `#blStatus IN (${filterExpresstion.join(",")})`,
             ExpressionAttributeNames: {
                 "#blStatus": "billOfLadingStatus"
             },
-            ExpressionAttributeValues: {
-                ":val": 0
-            },
+            ExpressionAttributeValues: expressValue,
         };
         console.log(params)
         // Thực hiện scan bảng DynamoDB với các params đã tạo
@@ -87,6 +97,47 @@ class BillOfLadingsController {
                     message: "Thêm mới vận đơn thành công!"
                 })
         })
+    }
+    async updateBillOfLadings(req, res) {
+        const blId = req.params.id;
+        const { billOfLadingStatus,estimateRoute } = req.body;
+        if (!billOfLadingStatus || !estimateRoute){
+            res.send({
+                code: 500,
+                message: "Thiếu tham số để cập nhật"
+            })
+            return;
+        }
+        const params = {
+            TableName: "BillOfLading",
+            Key: {
+                "billOfLadingID": blId
+            },
+            UpdateExpression: 'set #status = :statusVal, #eR = :eRVal',
+            ExpressionAttributeNames: { 
+                '#status': 'billOfLadingStatus',
+                '#eR': 'estimateRoute',
+            },
+            ExpressionAttributeValues: { 
+                ':statusVal': billOfLadingStatus,
+                ':eRVal' : estimateRoute
+            },
+        };
+
+        try {
+            await dynamoClient.update(params).promise();
+            res.json({
+                code: 200,
+                message: 'Cập nhật vận đơn thành công!'
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({
+                code: 500,
+                message: 'Lỗi cập nhật vận đơn',
+                error: error
+            });
+        }
     }
 }
 module.exports = new BillOfLadingsController;

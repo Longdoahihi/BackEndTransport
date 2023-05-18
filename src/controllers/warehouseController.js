@@ -63,7 +63,7 @@ class WarehouseController {
         }
         if (district) {
             if (filterExpression !== '') {
-                filterExpression += ' AND ';
+                filterExpression += ' OR ';
             }
             filterExpression += 'contains(#district, :district)';
             expressionAttributeValues[':district'] = district;
@@ -76,7 +76,6 @@ class WarehouseController {
                 ExpressionAttributeValues: expressionAttributeValues,
             }
         }
-        console.log("abcabcabc::::::::",query)
         // Tạo DynamoDB scan params object với biểu thức filter và attribute names/values đã tạo
         const params = {
             TableName: 'Warehouse',
